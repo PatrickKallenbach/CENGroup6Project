@@ -5,31 +5,8 @@
 
 <h1 align="center" style="padding-top: 20px;">Month</h1>
 
-<!-- 
-<ul class="list-group list-group-flush" id="notes">
-  {% for note in user.notes %}
-  <li class="list-group-item">
-    {{ note.data }}
-    <button type="button" class="close" onClick="deleteNote({{ note.id }})">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </li>
-  {% endfor %}
-</ul>
 
 
-<div class="d-flex justify-content-center align-items-center" style="height: 50vh; margin-top: 20px; margin-bottom: 20px;">
-  <img src="static/temporary_schedule_image.png" alt="Centered Image" class="img-fluid" style="max-height: 100%;">
-</div>
-
-
-<form method="POST">
-  <textarea name="note" id="note" class="form-control"></textarea>
-  <br />
-  <div align="center">
-    <button type="submit" class="btn btn-primary">Add Reminder</button>
-  </div>
-</form> -->
 
 <head>
     <style>
@@ -136,6 +113,25 @@
         </tbody>
     </table>
 </body>
+
+<ul class="list-group list-group-flush" id="notes">
+  {% for note in user.notes %}
+  <li class="list-group-item">
+    {{ note.data }}
+    <button type="button" class="close" onClick="deleteNote({{ note.id }})">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </li>
+  {% endfor %}
+</ul>
+
+<form method="POST">
+  <textarea name="note" id="note" class="form-control"></textarea>
+  <br />
+  <div align="center">
+    <button type="submit" class="btn btn-primary">Add Reminder</button>
+  </div>
+</form> 
 
 
 {% endblock %}

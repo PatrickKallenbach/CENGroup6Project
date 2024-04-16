@@ -42,25 +42,30 @@ def sign_up():
         first_name = request.form.get('firstName')
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
+        role = request.form.get('role')
+        code = request.form.get('code')
+
+        # Define your codes for manager and employee roles
+        manager_code = "MANAGER123"
+        employee_code = "EMPLOYEE456"
+
+        # Check if the entered code matches the role
+        if (role == "manager" and code != manager_code) or (role == "employee" and code != employee_code):
+            flash('Invalid enrollment code for selected role.', category='error')
+            return render_template("sign_up.html", user=current_user)
 
         user = User.query.filter_by(email=email).first()
         if user:
             flash('Email already in use.', category='error')
-        elif len(email) < 4:
-            flash('Email must be greater than 3 characters.', category='error')
-        elif len(first_name) < 2:
-            flash('First name must be longer than 1 character.', category='error')
         elif password1 != password2:
             flash('Passwords do not match.', category='error')
-        elif (len(password1) < 8 or not re.search("[a-z]", password1) or not re.search("[A-Z]", password1)
-          or not re.search("[0-9]", password1)):
-            flash('Password must be at least 8 characters with a capital, lowercase, and number character.', category='error')
         else:
-            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='pbkdf2:sha256'))
+            # Create and log in the user
+            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='pbkdf2:sha256'), role=role)
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)
-            flash('SwampBites account created.', category='success')
+            flash('Account created.', category='success')
             return redirect(url_for('views.home'))
 
     return render_template("sign_up.html", user=current_user)
