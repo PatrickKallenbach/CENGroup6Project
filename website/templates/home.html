@@ -20,7 +20,8 @@
             text-align: left;
             padding: 8px;
             vertical-align: top;
-            height: 100px; /* Adjust height for better cell division */
+            height: 100%; /* Adjust height for better cell division */
+            width: 10%
         }
 
         .highlight {
@@ -38,6 +39,12 @@
 
         .calendar-container {
             padding-top: 10px;
+        }
+
+        .table-header {
+            height: 10px;
+            background: orange;
+            color: black;
         }
 
         .date-number {
@@ -59,7 +66,7 @@
         <div class="calendar-container">
             <table>
                 <thead>
-                    <tr style="background: orange; color: black;">
+                    <tr class="table-header">
                         <th>Sun</th>
                         <th>Mon</th>
                         <th>Tue</th>
@@ -111,9 +118,13 @@
         let calendarBody = document.getElementById("calendarBody");
         calendarBody.innerHTML = ""; // Clear the previous cells
 
+        let numRows = Math.ceil((startDay + daysInMonth)/7);
+
         let date = 1;
-        for (let i = 0; i < 6; i++) { // Calendar has at max 6 rows
+        for (let i = 0; i < numRows; i++) { // Calendar has at max 6 rows
             let row = document.createElement("tr");
+            row.style.height = `${Math.ceil(50/numRows)}vh`;
+            //row.style.height = '10vh';
             for (let j = 0; j < 7; j++) {
                 let cell = document.createElement("td");
                 if (i === 0 && j < startDay || date > daysInMonth) {
