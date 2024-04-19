@@ -13,6 +13,8 @@
             color: black;
             border: 1px solid black;
             width: 100%;
+            table-layout: fixed;
+            height: 55vh;
         }
          
         th, td {
@@ -20,7 +22,6 @@
             text-align: left;
             padding: 8px;
             vertical-align: top;
-            height: 100%; /* Adjust height for better cell division */
             width: 10%
         }
 
@@ -123,8 +124,7 @@
         let date = 1;
         for (let i = 0; i < numRows; i++) { // Calendar has at max 6 rows
             let row = document.createElement("tr");
-            row.style.height = `${Math.ceil(50/numRows)}vh`;
-            //row.style.height = '10vh';
+
             for (let j = 0; j < 7; j++) {
                 let cell = document.createElement("td");
                 if (i === 0 && j < startDay || date > daysInMonth) {
