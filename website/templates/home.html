@@ -25,8 +25,22 @@
             width: 10%
         }
 
+        td:hover {background-color: lightcyan;}
+
         .highlight {
             background-color: #FFD700; /* Gold background for today's date */
+        }
+
+        .highlight:hover {
+            background-color: #EFF37F;
+        }
+
+        .selected {
+            background-color: rgb(255, 252, 234);
+        }
+
+        .selected:hover {
+            background-color: rgb(248, 255, 230);
         }
 
         .month-year-buttons {
@@ -101,6 +115,8 @@
         renderCalendar(currentMonth, currentYear);
     });
 
+    let shifts = [];
+
     function changeMonth(direction) {
         currentMonth += direction;
         if (currentMonth < 0 || currentMonth > 11) {
@@ -134,12 +150,47 @@
                     if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                         cell.classList.add("highlight");
                     }
+                    for (let i = 0; i < shifts.length; i++) {
+                        if (shifts[i].date === date && shifts[i].month == month) {
+                            let cellShift = shifts[i];
+                            cell.dataset.cellshift = JSON.stringify(cellshift);
+                        }
+                    }
                     date++;
                 }
+                cell.addEventListener('click', function() {
+                    let cells = document.getElementsByTagName('td');
+                    for (let k = 0; k < cells.length; k++) {
+                        cells[k].classList.remove('selected');
+                    }
+                    cell.classList.add("selected");
+                    
+                });
                 row.appendChild(cell);
             }
             calendarBody.appendChild(row); // Append each row to the calendar body
         }
     }
+
+    class Shift {
+        constructor(shiftType, employeeName, role) {
+            this.shiftType = shiftType;
+            this.employeeName = employeeName;
+            this.role = role;
+            this.date = date;
+            this.month = month;
+        }
+    }
+
+    
 </script>
 {% endblock %}
+
+
+const tbody = document.getElementByID('calendarBody');
+tbody.addEventListener('click', function (e) { // https://stackoverflow.com/questions/62259233/javascript-get-table-cell-content-on-click
+    const cell = e.target.closest('td');
+    if (!cell) {return;} // Quit, not clicked on a cell
+    const row = cell.parentElement;
+    cell.innerHTML = "";
+});
