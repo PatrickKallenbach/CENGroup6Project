@@ -69,6 +69,27 @@
             padding: 5px;
             font-weight: bold;
         }
+
+        .num-shifts {
+            position: relative;
+            bottom: 0;
+            right: 0;
+            padding: 5px;
+        }
+
+        .shift-buttons {
+            position: absolute;
+            right: 40px;
+            bottom: 40px;
+            height: 7%;
+            width:10%;
+
+            background-color: #1a91e0;
+            color: white;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -96,6 +117,9 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    <div id="shift-buttons" class="text-center font-weight-bold">
+        <button class="shift-buttons" onclick="addShift()" >Add Shift</button>
     </div>
 </body>
 </html>
@@ -125,6 +149,17 @@
         renderCalendar(currentMonth, currentYear);
     }
 
+    function addShift() {
+        let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
+        if (cells.length > 0) {
+            cell = cells[0];
+            let month = JSON.parse(cell.dataset.month);
+            let date = JSON.parse(cell.dataset.date);
+            shifts.push(new Shift(1, "John", "Cook", date, month));
+            renderCalendar(currentMonth, currentYear);
+        }
+    }
+
     function renderCalendar(month, year) {
         const monthYearHeader = document.getElementById("monthYear");
         monthYearHeader.children[1].innerHTML = `${months[month]} ${year}`;
@@ -146,16 +181,21 @@
                 if (i === 0 && j < startDay || date > daysInMonth) {
                     cell.innerHTML = "";
                 } else if (date <= daysInMonth) {
-                    cell.innerHTML = `<span class="date-number">${date}</span>`;
                     if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
                         cell.classList.add("highlight");
                     }
+                    cell.dataset.date = JSON.stringify(date);
+                    cell.dataset.month = JSON.stringify(month);
+
+                    let numShifts = 0;
                     for (let i = 0; i < shifts.length; i++) {
                         if (shifts[i].date === date && shifts[i].month == month) {
                             let cellShift = shifts[i];
-                            cell.dataset.cellshift = JSON.stringify(cellshift);
+                            cell.dataset.cellshift = JSON.stringify(cellShift);
+                            numShifts++;
                         }
                     }
+                    cell.innerHTML = `<span class="date-number">${date}</span><span class="num-shifts">${numShifts}</span>`;
                     date++;
                 }
                 cell.addEventListener('click', function() {
@@ -173,7 +213,7 @@
     }
 
     class Shift {
-        constructor(shiftType, employeeName, role) {
+        constructor(shiftType, employeeName, role, date, month) {
             this.shiftType = shiftType;
             this.employeeName = employeeName;
             this.role = role;
