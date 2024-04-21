@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for
 from flask_login import login_required, current_user
-from .models import Note
+from .models import User, Note
 from . import db
 import json
 
@@ -43,3 +43,13 @@ def delete_note():
         db.session.delete(note)
         db.session.commit()
     return jsonify({})
+
+@views.route('/get-employees', methods=['GET'])
+@login_required
+def get_employees():
+    if current_user.role != 'manager':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    employees = User.query.filter_by(role='employee').all()  # Adjust query as needed
+    employee_data = [{'id': e.id, 'first_name': e.first_name} for e in employees]
+    return jsonify(employee_data)
