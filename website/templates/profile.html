@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<style>
+  .profile-container {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #f8f9fa; /* Light grey background for better contrast */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Soft shadow for depth */
+  }
+
+  .profile-header {
+    text-align: center;
+    color: #333; /* Dark grey text for readability */
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eaeaea; /* Subtle separation line */
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 15px; /* Consistent spacing between form groups */
+  }
+
+  .form-control {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); /* Subtle inner shadow for depth */
+  }
+
+  .btn-primary {
+    background-color: #0056b3; /* Slightly darker blue for the primary button */
+    border-color: #004085;
+    padding: 10px 15px; /* Comfortable padding for clicking */
+  }
+</style>
+<div class="container profile-container">
+    <h2 class="profile-header">User Profile</h2>
+    <p><strong>Name:</strong> {{ user.first_name }}</p>
+    <p><strong>Role:</strong> {{ user.role }}</p>
+    <h4>Preferred Working Hours</h4>
+    <form method="post">
+        <div class="form-group">
+            <label for="days">Select Preferred Days:</label>
+            <select multiple class="form-control" id="days" name="days">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="times">Preferred Times:</label>
+            <input type="text" class="form-control" id="times" name="times" placeholder="e.g., 9 AM - 5 PM">
+        </div>
+        <div class="form-group">
+            <label for="skills">Skills:</label>
+            <input type="text" class="form-control" id="skills" name="skills" placeholder="List your skills">
+        </div>
+        <button type="submit" class="btn btn-primary">Update Preferences</button>
+    </form>
+</div>
+{% endblock %}
