@@ -162,6 +162,23 @@
             display: flex;
             justify-content: space-between;
         }
+        
+        .shift-display-header {
+            text-align: center;
+        }
+
+        .shift-display {    
+            list-style-type: none;
+            padding: 20px;
+            margin: 0;
+            text-align: center;
+        }
+
+        .shift-display li {
+            display: inline-block;
+            text-align: left;
+            margin-right: 0px;
+        }
     </style>
         </head>
         <body>
@@ -234,16 +251,16 @@
     <center>
         <div class="shift-details">
             <span style="width: 50%">
-                <h2>Morning</h2>
-                <ul id="shift-first" style="list-style-type:none;"></ul>
+                <h2 class="shift-display-header"><u> Morning </u></h2>
+                <ul id="shift-first" class="shift-display"></ul>
             </span>
             <span style="width: 50%">
-                <h2>Evening</h2>
-                <ul id="shift-second" style="list-style-type:none;"></ul>
+                <h2 class="shift-display-header"><u> Evening </u></h2>
+                <ul id="shift-second" class="shift-display"></ul>
             </span>
             <span style="width: 50%">
-                <h2>Night</h2>
-                <ul id="shift-third" style="list-style-type:none;"></ul>
+                <h2 class="shift-display-header"><u> Night </u></h2>
+                <ul id="shift-third" class="shift-display"></ul>
             </span>
         </div>
     </center>
