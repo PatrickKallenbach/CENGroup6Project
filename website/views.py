@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for
 from flask_login import login_required, current_user
-from .models import User, Note
+from .models import User, Note, Shift
 from . import db
 import json
 
@@ -53,3 +53,46 @@ def get_employees():
     employees = User.query.filter_by(role='employee').all()  # Adjust query as needed
     employee_data = [{'id': e.id, 'first_name': e.first_name} for e in employees]
     return jsonify(employee_data)
+
+@views.route('/create_shift', methods=['POST'])
+def create_shift():
+    data = request.get_json()
+    user = User.query.filter_by(id=data['user_id']).first()
+    new_shift = Shift(user=user, month=data['month'], day=data['day'], type=data['type'])
+    db.session.add(new_shift)
+    db.session.commit()
+    return jsonify({'message': 'Shift created!'})
+
+@views.route('/delete_shift/<id>', methods=['DELETE'])
+def delete_shift(id):
+    shift = Shift.query.get(id)
+    if shift:
+        db.session.delete(shift)
+        db.session.commit()
+        return jsonify({'message': 'Shift deleted!'})
+    else:
+        return jsonify({'message': 'Shift not found!'})
+    
+@views.route('/get_shifts', methods=['GET'])
+def get_shifts():
+    shifts = Shift.query.all()
+    shifts_list = []
+    for shift in shifts:
+        shifts_list.append({
+            'id': shift.id,
+            'user_id': shift.user_id,
+            'month': shift.month,
+            'day': shift.day,
+            'type': shift.type
+        })
+    return jsonify(shifts_list)
+
+@views.route('/get_user/<first_name>', methods=['GET'])
+def get_user(first_name):
+    user = User.query.filter_by(first_name=first_name).first()
+    user_info = {
+        'id': user.id,
+        'email': user.email,
+        'first_name': user.first_name
+    }
+    return jsonify(user_info)
