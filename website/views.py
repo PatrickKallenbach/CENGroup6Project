@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from .models import User, Note, Shift
 from . import db
 import json
+from sqlalchemy import exists
 
 views = Blueprint('views', __name__)
 
@@ -56,10 +57,18 @@ def get_employees():
 def create_shift():
     data = request.get_json()
     user = User.query.filter_by(id=data['user_id']).first()
-    new_shift = Shift(user=user, month=data['month'], day=data['day'], type=data['type'])
-    db.session.add(new_shift)
-    db.session.commit()
-    return jsonify({'message': 'Shift created!'})
+    if db.session.query(exists()
+                        .where(Shift.user == user)
+                        .where(Shift.month == data['month'])
+                        .where(Shift.day == data['day'])
+                        .where(Shift.type == data['type'])
+                        ).scalar():
+        return jsonify({'error': 'Shift already exists!'})
+    else:
+        new_shift = Shift(user=user, month=data['month'], day=data['day'], type=data['type'])
+        db.session.add(new_shift)
+        db.session.commit()
+        return jsonify({'message': 'Shift created!'})
 
 @views.route('/delete_shift/<id>', methods=['DELETE'])
 def delete_shift(id):
