@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from .models import User, Note, Shift
 from . import db
 import json
+from datetime import datetime
 
 views = Blueprint('views', __name__)
 
@@ -96,3 +97,25 @@ def get_user(first_name):
         'first_name': user.first_name
     }
     return jsonify(user_info)
+'''
+@views.route('/assign-shift', methods=['POST'])
+@login_required
+def assign_shift():
+    if current_user.role == 'manager':
+        data = request.json
+        # Ensure that 'date' from 'data' is in the correct format expected by the Shift model
+        shift_date = datetime.strptime(data['date'], '%Y-%m-%d')  # Adjust format as needed
+        new_shift = Shift(date=shift_date, employee_id=data['employee_id'])
+        db.session.add(new_shift)
+        db.session.commit()
+        return jsonify({'message': 'Shift assigned successfully'}), 200
+    return jsonify({'error': 'Unauthorized'}), 403
+
+@views.route('/get-shifts', methods=['GET'])
+@login_required
+def get_shifts():
+    date = request.args.get('date')
+    shifts = Shift.query.filter_by(date=date).all()
+    shift_details = [{'employee_name': shift.employee.first_name, 'shift_id': shift.id} for shift in shifts]
+    return jsonify(shift_details), 200
+'''

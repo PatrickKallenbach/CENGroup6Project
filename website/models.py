@@ -15,7 +15,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True)
     password = db.Column(db.String(150))
     first_name = db.Column(db.String(150))
-    role = db.Column(db.String(20), default='employee')  # Default role is 'employee'
+    role = db.Column(db.String(20), default='employee')  # default role is 'employee'
     notes = db.relationship('Note')
 
 class Shift(db.Model):
