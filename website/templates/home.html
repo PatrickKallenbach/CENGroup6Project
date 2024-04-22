@@ -36,7 +36,7 @@
         }
 
         .selected {
-            background-color: rgb(255, 252, 234);
+            background-color: rgb(255, 246, 190);
         }
 
         .selected:hover {
@@ -285,7 +285,7 @@
             let selection = showEmployeeList();
 
             let employee = [];
-
+            
             fetch('/get_user/' + selection.employee, {
                 method: 'GET',
                 headers: {
@@ -302,7 +302,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ user_id: employee[0].user_id, month: month, day: day, type: selection.type}),
+                body: JSON.stringify({ user_id: 1, month: month, day: day, type: 1}),
             })
             .then(response => response.json())
             .then(data => {
