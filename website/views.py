@@ -3,14 +3,12 @@ from flask_login import login_required, current_user
 from .models import User, Note, Shift
 from . import db
 import json
-from datetime import datetime
 
 views = Blueprint('views', __name__)
 
 @views.route('/frontpage', methods=['GET'])
 def frontpage():
     return render_template("front_page.html", user=current_user)
-
 
 @views.route('/', methods=['GET', 'POST'])
 @login_required
@@ -31,7 +29,6 @@ def home():
 
     return render_template("home.html", user=current_user)
 
-
 @views.route('/delete-note', methods=['POST'])
 @login_required
 def delete_note():
@@ -50,7 +47,7 @@ def delete_note():
 def get_employees():
     if current_user.role != 'manager':
         return jsonify({'error': 'Unauthorized'}), 403
-    
+
     employees = User.query.filter_by(role='employee').all()  # Adjust query as needed
     employee_data = [{'id': e.id, 'first_name': e.first_name} for e in employees]
     return jsonify(employee_data)
@@ -91,13 +88,12 @@ def get_shifts():
 '''
 @views.route('/assign-shift', methods=['POST'])
 @login_required
-def assign_shift():
-    if current_user.role == 'manager':
-        data = request.json
-        # Ensure that 'date' from 'data' is in the correct format expected by the Shift model
-        shift_date = datetime.strptime(data['date'], '%Y-%m-%d')  # Adjust format as needed
-        new_shift = Shift(date=shift_date, employee_id=data['employee_id'])
-        db.session.add(new_shift)
+def profile():
+    if request.method == 'POST':
+        current_user.name = request.form.get('name')
+        current_user.days = ','.join(request.form.getlist('days[]'))
+        current_user.times = request.form.get('times')
+        current_user.skills = request.form.get('skills')
         db.session.commit()
         return jsonify({'message': 'Shift assigned successfully'}), 200
     return jsonify({'error': 'Unauthorized'}), 403
