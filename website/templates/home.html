@@ -123,7 +123,7 @@
             margin: 15% auto; /* 15% from the top and centered */
             padding: 20px;
             border: 1px solid #888;
-            width: 80%; /* Could be more or less, depending on screen size */
+            width: 50%; /* Could be more or less, depending on screen size */
         }
 
         .row {
@@ -155,6 +155,12 @@
             left: 0;
             bottom: 0;
             padding: 10px;
+        }
+
+        .shift-details {
+            width: 50%;
+            display: flex;
+            justify-content: space-between;
         }
     </style>
         </head>
@@ -207,7 +213,7 @@
                     <option>Evening</option>
                     <option>Night</option>
                 </select>
-                <button id="submitButton" onclick="closeModal('employeeListModal')">Submit</button>
+                <button id="submitButton">Submit</button>
                 <p id="output"></p>
             </div>
         </div>
@@ -223,11 +229,29 @@
             </ul>
         </div>
     </div>
+
+    <br>
+    <center>
+        <div class="shift-details">
+            <span style="width: 50%">
+                <h2>Morning</h2>
+                <ul id="shift-first" style="list-style-type:none;"></ul>
+            </span>
+            <span style="width: 50%">
+                <h2>Evening</h2>
+                <ul id="shift-second" style="list-style-type:none;"></ul>
+            </span>
+            <span style="width: 50%">
+                <h2>Night</h2>
+                <ul id="shift-third" style="list-style-type:none;"></ul>
+            </span>
+        </div>
+    </center>
     
 
             {% if current_user.is_authenticated and current_user.role == 'manager' %}
                 <div id="shift-buttons" class="text-center font-weight-bold">
-                    <button class="shift-buttons" onclick="addShift()">Add Shift</button>
+                    <button class="shift-buttons">Add Shift</button>
                 </div>
             {% endif %}
 
@@ -235,9 +259,12 @@
             <!-- <div class="reveal-details-button-container">
                 <button id="revealDetailsButton">Reveal Details</button>
             </div> -->
+
+            <!--
             <div class="text-center font-weight-bold">
                 <button id="revealDetailsButton">Reveal Details</button>
             </div>
+        -->
 
 
         
@@ -254,6 +281,9 @@
 
     let selectedMonth = -1;
     let selectedDate = -1;
+
+    let selectedEmployee = null;
+    let selectedType = null;
 
     let startDay = 0;
     let daysInMonth = 0;
@@ -275,18 +305,14 @@
         renderCalendar(currentMonth, currentYear);
     }
 
-    function addShift() {
+    document.getElementById('shift-buttons').addEventListener('click', function() {
         let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
         if (cells.length > 0) {
             cell = cells[0];
             let month = JSON.parse(cell.dataset.month);
             let day = JSON.parse(cell.dataset.date);
-
-            let selection = showEmployeeList();
-
-            let employee = [];
             
-            fetch('/get_user/' + selection.employee, {
+            fetch('/get-employees', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -294,88 +320,62 @@
             }).then(response => {
                 return response.json();
             }).then(data => {
-                employee.push(data);
-            })
-            
-            fetch('/create_shift', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ user_id: 1, month: month, day: day, type: 1}),
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
+                let employeeDropdown = document.getElementById('employeeDropdown');
+                let typeDropdown = document.getElementById('typeDropdown');
+                let submitButton = document.getElementById('submitButton');
+                employeeDropdown.innerHTML = '';
+
+                data.forEach(employee => {
+                    var option = document.createElement('option');
+                    option.value = employee.first_name;
+                    option.text = employee.first_name;
+                    employeeDropdown.add(option);
+                });
+
+                employeeDropdown.selectedIndex = 0;
+                typeDropdown.selectedIndex = 0;
+
+                selectedEmployee = data.find(x => x.first_name === employeeDropdown.value);
+                selectedType = 'Morning';
+
+                employeeDropdown.addEventListener('change', function() {
+                    selectedEmployee = data.find(x => x.first_name === this.value);
+                });
+
+                typeDropdown.addEventListener('change', function() {
+                    selectedType = this.value;
+                });
+
+                submitButton.addEventListener('click', function() {
+                    closeModal('employeeListModal');
+
+                    fetch('/create_shift', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 'user_id': selectedEmployee.id, 'month': month, 'day': day, 'type': selectedType}),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                    renderCalendar(currentMonth, currentYear);
+                });
+
+
+                document.getElementById('employeeListModal').style.display = 'block';
+            }).catch(error => {
+                console.error('Error fetching employees:', error);
             });
-            renderCalendar(currentMonth, currentYear);
         }
         else {
             alert("Please select a date first.");
         }
-        
-        // let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
-        // if (cells.length > 0) {
-        //     cell = cells[0];
-        //     let month = JSON.parse(cell.dataset.month);
-        //     let date = JSON.parse(cell.dataset.date);
-        //     shifts.push(new Shift(1, "John", "Cook", date, month));
-        //     renderCalendar(currentMonth, currentYear);
-        // }
-    }
-
-    function showEmployeeList() {
-        let selectedEmployee = "";
-        let selectedType = 0;
-
-        // Fetch employee data from the server
-        fetch('/get-employees', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            // Authentication headers if necessary
-        }).then(response => {
-            return response.json();
-        }).then(data => {
-            // Assuming 'data' is an array of employee objects
-            // const list = document.getElementById('employeeList');
-            // list.innerHTML = ''; // Clear existing list items
-            // data.forEach(employee => {
-            //     const listItem = document.createElement('li');
-            //     listItem.textContent = employee.first_name; // Adjust if needed
-            //     list.appendChild(listItem);
-            // });
-            // Show the modal
-            let employeeDropdown = document.getElementById('employeeDropdown');
-            let typeDropdown = document.getElementById('typeDropdown');
-
-            data.forEach(employee => {
-                var option = document.createElement('option');
-                option.value = employee.first_name;
-                option.text = employee.first_name;
-                employeeDropdown.add(option);
-            });
-
-            employeeDropdown.addEventListener('change', function() {
-                selectedEmployee = this.value;
-            });
-
-            typeDropdown.addEventListener('change', function() {
-                selectedType = this.value;
-            });
-
-            document.getElementById('employeeListModal').style.display = 'block';
-        }).catch(error => {
-            console.error('Error fetching employees:', error);
-        });
-
-        return {employee: selectedEmployee, type: selectedType};
-    }
-
+    });
 
     /*
     function deleteShift() {
@@ -394,29 +394,34 @@
                 return response.json();
             }).then(data => {
                 // Assuming 'data' is an array of employee objects
-                const list = document.getElementById('shiftList');
-                list.innerHTML = ''; // Clear existing list items
+                const morning = document.getElementById('shift-first');
+                const evening = document.getElementById('shift-second');
+                const night = document.getElementById('shift-third');
+
+                morning.innerHTML = '';
+                evening.innerHTML = '';
+                night.innerHTML = '';
+
                 data.forEach(shift => {
                     if (shift.day == selectedDate && shift.month == selectedMonth) {
                         const listItem = document.createElement('li');
-                        let type = "";
-                        switch (shift.type){
-                            case 1:
-                                type = "Morning";
+                        
+                        listItem.textContent = shift.first_name;
+                        switch (shift.type) {
+                            case 'Morning':
+                                morning.appendChild(listItem);
                                 break;
-                            case 2:
-                                type = "Evening";
+                            case 'Evening':
+                                evening.appendChild(listItem);
                                 break;
-                            case 3:
-                                type = "Night";
+                            case 'Night':
+                                night.appendChild(listItem);
                                 break;
                         }
-                        listItem.textContent = shift.first_name + ": " + type;
-                        list.appendChild(listItem);
                     }
                 });
                 // Show the modal
-                document.getElementById('shiftListModal').style.display = 'block';
+                //document.getElementById('shiftListModal').style.display = 'block';
             }).catch(error => {
                 console.error('Error fetching employees:', error);
             });
@@ -485,7 +490,9 @@
 
         if (selectedDate !== -1 && selectedMonth !== -1) {
             selectCell();
-         }
+        }
+
+        getShifts();
     }
 
     function selectCell() {
@@ -494,7 +501,11 @@
             let cell = cells[k];
             cell.classList.remove('selected');
         }       
-        cells[startDay + selectedDate - 1].classList.add("selected"); 
+        if (selectedMonth == JSON.parse(cells[15].dataset.month)) {
+            cells[startDay + selectedDate - 1].classList.add("selected"); 
+        }
+
+        getShifts();
     }
 
     var modal = document.getElementById("myModal");
@@ -549,9 +560,9 @@
     }
 
     // Event listener for your Add Shift button
-    document.getElementById('shift-buttons').addEventListener('click', function() {
-        showEmployeeList();
-    });
+    //document.getElementById('shift-buttons').addEventListener('click', function() {
+    //    showEmployeeList();
+    //});
 
     document.getElementById('revealDetailsButton').addEventListener('click', function() {
         let selectedCell = document.querySelector('.selected');
@@ -565,16 +576,3 @@
 
 </script>
 {% endblock %}
-
-
-const tbody = document.getElementById('calendarBody');
-tbody.addEventListener('click', function (e) {
-    const cell = e.target.closest('td');
-    if (!cell) return; // Quit, not clicked on a cell
-    const cells = tbody.getElementsByTagName('td');
-    for (const cell of cells) {
-        cell.classList.remove('selected');
-    }
-    cell.classList.add('selected');
-    // Do not clear innerHTML: cell.innerHTML = "";
-});

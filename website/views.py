@@ -81,22 +81,13 @@ def get_shifts():
     for shift in shifts:
         shifts_list.append({
             'id': shift.id,
-            'user_id': shift.user_id,
+            'first_name': shift.user.first_name,
             'month': shift.month,
             'day': shift.day,
             'type': shift.type
         })
     return jsonify(shifts_list)
 
-@views.route('/get_user/<first_name>', methods=['GET'])
-def get_user(first_name):
-    user = User.query.filter_by(first_name=first_name).first()
-    user_info = {
-        'id': user.id,
-        'email': user.email,
-        'first_name': user.first_name
-    }
-    return jsonify(user_info)
 '''
 @views.route('/assign-shift', methods=['POST'])
 @login_required

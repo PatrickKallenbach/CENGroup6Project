@@ -24,4 +24,4 @@ class Shift(db.Model):
     user = db.relationship('User')
     month = db.Column(db.Integer, nullable=False)
     day = db.Column(db.Integer, nullable=False)
-    type = db.Column(db.Integer, nullable=False)
+    type = db.Column(db.String(10))
