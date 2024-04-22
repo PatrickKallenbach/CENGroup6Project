@@ -15,15 +15,12 @@ def login():
         password = request.form.get('password')
 
         user = User.query.filter_by(email=email).first()
-        if user:
-            if check_password_hash(user.password, password):
-                flash('You have successfully logged into SwampBites Scheduling!', category='success')
-                login_user(user, remember=True)
-                return redirect(url_for('views.home'))
-            else:
-                flash('Incorrect password. Please try again.', category='error')
+        if user and check_password_hash(user.password, password):
+            flash('You have successfully logged into SwampBites Scheduling!', category='success')
+            login_user(user, remember=True)
+            return redirect(url_for('views.home'))
         else:
-            flash('Email does not exist.', category='error')
+            flash('Incorrect email or password. Please try again.', category='error')
 
     return render_template("login.html", user=current_user)
 

@@ -36,7 +36,7 @@
         }
 
         .selected {
-            background-color: rgb(255, 252, 234);
+            background-color: rgb(255, 246, 190);
         }
 
         .selected:hover {
@@ -126,6 +126,15 @@
             width: 80%; /* Could be more or less, depending on screen size */
         }
 
+        .row {
+            display: flex;
+        }
+        
+        .row > * {
+            flex: 1;
+            margin-right: 10px;
+        }
+
         /* The Close Button */
         .close {
             color: #aaa;
@@ -147,8 +156,6 @@
             bottom: 0;
             padding: 10px;
         }
-
-
     </style>
         </head>
         <body>
@@ -189,15 +196,34 @@
                 </div>
             </div>
 
-            <div id="employeeListModal" class="modal">
-                <div class="modal-content">
-                    <span class="close" onclick="closeModal('employeeListModal')">&times;</span>
-                    <h2>Employee List</h2>
-                    <ul id="employeeList">
-                    </ul>
-                </div>
+    <div id="employeeListModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('employeeListModal')">&times;</span>
+            <h2>Select an Employee</h2>
+            <div class="row">
+                <select id="employeeDropdown"></select>
+                <select id="typeDropdown">
+                    <option>Morning</option>
+                    <option>Evening</option>
+                    <option>Night</option>
+                </select>
+                <button id="submitButton" onclick="closeModal('employeeListModal')">Submit</button>
+                <p id="output"></p>
             </div>
-            
+        </div>
+    </div>
+
+    
+    <div id="shiftListModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('shiftListModal')">&times;</span>
+            <h2>Shifts List</h2>
+            <ul id="shiftList">
+                <!-- Employee list will be populated here -->
+            </ul>
+        </div>
+    </div>
+    
 
             {% if current_user.is_authenticated and current_user.role == 'manager' %}
                 <div id="shift-buttons" class="text-center font-weight-bold">
@@ -226,6 +252,12 @@
     let currentMonth = today.getMonth();
     let currentYear = today.getFullYear();
 
+    let selectedMonth = -1;
+    let selectedDate = -1;
+
+    let startDay = 0;
+    let daysInMonth = 0;
+
     const months = ["January", "February", "March", "April", "May", "June",
                     "July", "August", "September", "October", "November", "December"];
 
@@ -248,18 +280,154 @@
         if (cells.length > 0) {
             cell = cells[0];
             let month = JSON.parse(cell.dataset.month);
-            let date = JSON.parse(cell.dataset.date);
-            shifts.push(new Shift(1, "John", "Cook", date, month));
+            let day = JSON.parse(cell.dataset.date);
+
+            let selection = showEmployeeList();
+
+            let employee = [];
+            
+            fetch('/get_user/' + selection.employee, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }).then(response => {
+                return response.json();
+            }).then(data => {
+                employee.push(data);
+            })
+            
+            fetch('/create_shift', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: 1, month: month, day: day, type: 1}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
             renderCalendar(currentMonth, currentYear);
         }
+        else {
+            alert("Please select a date first.");
+        }
+        
+        // let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
+        // if (cells.length > 0) {
+        //     cell = cells[0];
+        //     let month = JSON.parse(cell.dataset.month);
+        //     let date = JSON.parse(cell.dataset.date);
+        //     shifts.push(new Shift(1, "John", "Cook", date, month));
+        //     renderCalendar(currentMonth, currentYear);
+        // }
+    }
+
+    function showEmployeeList() {
+        let selectedEmployee = "";
+        let selectedType = 0;
+
+        // Fetch employee data from the server
+        fetch('/get-employees', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            // Authentication headers if necessary
+        }).then(response => {
+            return response.json();
+        }).then(data => {
+            // Assuming 'data' is an array of employee objects
+            // const list = document.getElementById('employeeList');
+            // list.innerHTML = ''; // Clear existing list items
+            // data.forEach(employee => {
+            //     const listItem = document.createElement('li');
+            //     listItem.textContent = employee.first_name; // Adjust if needed
+            //     list.appendChild(listItem);
+            // });
+            // Show the modal
+            let employeeDropdown = document.getElementById('employeeDropdown');
+            let typeDropdown = document.getElementById('typeDropdown');
+
+            data.forEach(employee => {
+                var option = document.createElement('option');
+                option.value = employee.first_name;
+                option.text = employee.first_name;
+                employeeDropdown.add(option);
+            });
+
+            employeeDropdown.addEventListener('change', function() {
+                selectedEmployee = this.value;
+            });
+
+            typeDropdown.addEventListener('change', function() {
+                selectedType = this.value;
+            });
+
+            document.getElementById('employeeListModal').style.display = 'block';
+        }).catch(error => {
+            console.error('Error fetching employees:', error);
+        });
+
+        return {employee: selectedEmployee, type: selectedType};
+    }
+
+
+    /*
+    function deleteShift() {
+        // do something eventually
+    }
+    */
+
+    function getShifts() {        
+        fetch('/get_shifts', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // Authentication headers if necessary
+            }).then(response => {
+                return response.json();
+            }).then(data => {
+                // Assuming 'data' is an array of employee objects
+                const list = document.getElementById('shiftList');
+                list.innerHTML = ''; // Clear existing list items
+                data.forEach(shift => {
+                    if (shift.day == selectedDate && shift.month == selectedMonth) {
+                        const listItem = document.createElement('li');
+                        let type = "";
+                        switch (shift.type){
+                            case 1:
+                                type = "Morning";
+                                break;
+                            case 2:
+                                type = "Evening";
+                                break;
+                            case 3:
+                                type = "Night";
+                                break;
+                        }
+                        listItem.textContent = shift.first_name + ": " + type;
+                        list.appendChild(listItem);
+                    }
+                });
+                // Show the modal
+                document.getElementById('shiftListModal').style.display = 'block';
+            }).catch(error => {
+                console.error('Error fetching employees:', error);
+            });
     }
 
     function renderCalendar(month, year) {
         const monthYearHeader = document.getElementById("monthYear");
         monthYearHeader.children[1].innerHTML = `${months[month]} ${year}`;
 
-        const startDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        startDay = new Date(year, month, 1).getDay();
+        daysInMonth = new Date(year, month + 1, 0).getDate();
 
         let calendarBody = document.getElementById("calendarBody");
         calendarBody.innerHTML = ""; // Clear the previous cells
@@ -301,29 +469,32 @@
                     cell.dataset.date = JSON.stringify(date);
                     cell.dataset.month = JSON.stringify(month);
 
-                    let numShifts = 0;
-                    for (let i = 0; i < shifts.length; i++) {
-                        if (shifts[i].date === date && shifts[i].month == month) {
-                            let cellShift = shifts[i];
-                            cell.dataset.cellshift = JSON.stringify(cellShift);
-                            numShifts++;
-                        }
-                    }
                     cell.innerHTML = `<span class="date-number">${date}</span>`;
                     date++;
                 }
                 cell.addEventListener('click', function() {
-                    let cells = document.getElementsByTagName('td');
-                    for (let k = 0; k < cells.length; k++) {
-                        cells[k].classList.remove('selected');
-                    }
-                    cell.classList.add("selected");
-                    
+                    selectedDate = JSON.parse(cell.dataset.date);
+                    selectedMonth = JSON.parse(cell.dataset.month);
+
+                    selectCell();
                 });
                 row.appendChild(cell);
             }
             calendarBody.appendChild(row); // Append each row to the calendar body
         }
+
+        if (selectedDate !== -1 && selectedMonth !== -1) {
+            selectCell();
+         }
+    }
+
+    function selectCell() {
+        let cells = document.getElementsByTagName('td');
+        for (let k = 0; k < cells.length; k++) {
+            let cell = cells[k];
+            cell.classList.remove('selected');
+        }       
+        cells[startDay + selectedDate - 1].classList.add("selected"); 
     }
 
     var modal = document.getElementById("myModal");
@@ -345,15 +516,6 @@
         renderCalendar(currentMonth, currentYear);
     });
 
-    class Shift {
-        constructor(shiftType, employeeName, role, date, month) {
-            this.shiftType = shiftType;
-            this.employeeName = employeeName;
-            this.role = role;
-            this.date = date;
-            this.month = month;
-        }
-    }
     function closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
     }
@@ -367,60 +529,39 @@
             headers: {
                 'Content-Type': 'application/json',
             },
+            // Authentication headers if necessary
         }).then(response => {
             return response.json();
         }).then(data => {
-            // assuming 'data' is an array of employee objects
+            // Assuming 'data' is an array of employee objects
             const list = document.getElementById('employeeList');
-            list.innerHTML = ''; 
+            list.innerHTML = ''; // Clear existing list items
             data.forEach(employee => {
                 const listItem = document.createElement('li');
-                listItem.textContent = employee.first_name; 
+                listItem.textContent = employee.first_name; // Adjust if needed
                 list.appendChild(listItem);
             });
+            // Show the modal
             document.getElementById('employeeListModal').style.display = 'block';
         }).catch(error => {
             console.error('Error fetching employees:', error);
         });
     }
 
-    // event listener for your Add Shift button
-    // document.getElementById('shift-buttons').addEventListener('click', function() {
-    //     showEmployeeList();
-    // });
-    var shiftButtons = document.getElementById('shift-buttons');
-    if (shiftButtons) {
-        shiftButtons.addEventListener('click', function() {
-            showEmployeeList();
-        });
-    }
+    // Event listener for your Add Shift button
+    document.getElementById('shift-buttons').addEventListener('click', function() {
+        showEmployeeList();
+    });
+
     document.getElementById('revealDetailsButton').addEventListener('click', function() {
         let selectedCell = document.querySelector('.selected');
         if (selectedCell) {
-            let date = selectedCell.dataset.date;
-            document.querySelector("#myModal .modal-content p").textContent = "You clicked on date " + date;
-            modal.style.display = "block";
+            getShifts();
         } 
         else {
             alert("Please select a date first.");
         }
     });
-
-
-    document.getElementById('revealDetailsButton').addEventListener('click', function() {
-        let selectedCell = document.querySelector('.selected');
-        if (selectedCell) {
-            let date = selectedCell.dataset.date;
-            document.querySelector("#myModal .modal-content p").textContent = "You clicked on date " + date;
-            modal.style.display = "block";
-        } 
-        else {
-            alert("Please select a date first.");
-        }
-    });
-
-    
-
 
 </script>
 {% endblock %}
@@ -437,125 +578,3 @@ tbody.addEventListener('click', function (e) {
     cell.classList.add('selected');
     // Do not clear innerHTML: cell.innerHTML = "";
 });
-
-
-
-<!-- 
-
-
-VIEWS:
-
-from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for
-from flask_login import login_required, current_user
-from .models import User, Note
-from . import db
-import json
-
-views = Blueprint('views', __name__)
-
-@views.route('/frontpage', methods=['GET'])
-def frontpage():
-    return render_template("front_page.html", user=current_user)
-
-
-@views.route('/', methods=['GET', 'POST'])
-@login_required
-def home():
-    if request.method == 'POST':
-        if current_user.role != 'manager':
-            flash('You are not authorized to perform this action', category='error')
-            return redirect(url_for('views.home'))
-
-        note = request.form.get('note')
-        if len(note) < 1:
-            flash('Note is too short!', category='error')
-        else:
-            new_note = Note(data=note, user_id=current_user.id)
-            db.session.add(new_note)
-            db.session.commit()
-            flash('Note added!', category='success')
-
-    return render_template("home.html", user=current_user)
-
-
-@views.route('/delete-note', methods=['POST'])
-@login_required
-def delete_note():
-    note = json.loads(request.data)
-    noteId = note['noteId']
-    note = Note.query.get(noteId)
-    if note and note.user_id == current_user.id:
-        if current_user.role != 'manager':
-            return jsonify({'error': 'Unauthorized'}), 403
-        db.session.delete(note)
-        db.session.commit()
-    return jsonify({})
-
-@views.route('/get-employees', methods=['GET'])
-@login_required
-def get_employees():
-    if current_user.role != 'manager':
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    employees = User.query.filter_by(role='employee').all()  # Adjust query as needed
-    employee_data = [{'id': e.id, 'first_name': e.first_name} for e in employees]
-    return jsonify(employee_data) -->
-
-<!-- 
-VIEWS:
-
-from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for
-from flask_login import login_required, current_user
-from .models import User, Note
-from . import db
-import json
-
-views = Blueprint('views', __name__)
-
-@views.route('/frontpage', methods=['GET'])
-def frontpage():
-    return render_template("front_page.html", user=current_user)
-
-
-@views.route('/', methods=['GET', 'POST'])
-@login_required
-def home():
-    if request.method == 'POST':
-        if current_user.role != 'manager':
-            flash('You are not authorized to perform this action', category='error')
-            return redirect(url_for('views.home'))
-
-        note = request.form.get('note')
-        if len(note) < 1:
-            flash('Note is too short!', category='error')
-        else:
-            new_note = Note(data=note, user_id=current_user.id)
-            db.session.add(new_note)
-            db.session.commit()
-            flash('Note added!', category='success')
-
-    return render_template("home.html", user=current_user)
-
-
-@views.route('/delete-note', methods=['POST'])
-@login_required
-def delete_note():
-    note = json.loads(request.data)
-    noteId = note['noteId']
-    note = Note.query.get(noteId)
-    if note and note.user_id == current_user.id:
-        if current_user.role != 'manager':
-            return jsonify({'error': 'Unauthorized'}), 403
-        db.session.delete(note)
-        db.session.commit()
-    return jsonify({})
-
-@views.route('/get-employees', methods=['GET'])
-@login_required
-def get_employees():
-    if current_user.role != 'manager':
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    employees = User.query.filter_by(role='employee').all()  # Adjust query as needed
-    employee_data = [{'id': e.id, 'first_name': e.first_name} for e in employees]
-    return jsonify(employee_data) -->
