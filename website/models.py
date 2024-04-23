@@ -18,9 +18,10 @@ class User(db.Model, UserMixin):
     role = db.Column(db.String(20), default='employee')  # default role is 'employee'
     notes = db.relationship('Note')
 
-
 class Shift(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.DateTime, nullable=False)
-    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    employee = db.relationship('User')
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User')
+    month = db.Column(db.Integer, nullable=False)
+    day = db.Column(db.Integer, nullable=False)
+    type = db.Column(db.String(10))
