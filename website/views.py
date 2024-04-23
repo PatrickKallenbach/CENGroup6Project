@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for
 from flask_login import login_required, current_user
-from .models import User, Note
+from .models import User, Note, Shift
 from . import db
 import json
+from sqlalchemy import exists
 
 views = Blueprint('views', __name__)
 
@@ -51,6 +52,49 @@ def get_employees():
     employees = User.query.filter_by(role='employee').all()  # Adjust query as needed
     employee_data = [{'id': e.id, 'first_name': e.first_name} for e in employees]
     return jsonify(employee_data)
+
+@views.route('/create_shift', methods=['POST'])
+def create_shift():
+    data = request.get_json()
+    user = User.query.filter_by(id=data['user_id']).first()
+    if db.session.query(exists()
+                        .where(Shift.user == user)
+                        .where(Shift.month == data['month'])
+                        .where(Shift.day == data['day'])
+                        .where(Shift.type == data['type'])
+                        ).scalar():
+        return jsonify({'error': 'Shift already exists!'})
+    else:
+        new_shift = Shift(user=user, month=data['month'], day=data['day'], type=data['type'])
+        db.session.add(new_shift)
+        db.session.commit()
+        return jsonify({'message': 'Shift created!'})
+
+@views.route('/delete_shift', methods=['DELETE'])
+def delete_shift():
+    data = request.get_json()
+    id = data['id']
+    shift = Shift.query.get(id)
+    if shift:
+        db.session.delete(shift)
+        db.session.commit()
+        return jsonify({'message': 'Shift deleted!'})
+    else:
+        return jsonify({'message': 'Shift not found!'})
+    
+@views.route('/get_shifts', methods=['GET'])
+def get_shifts():
+    shifts = Shift.query.all()
+    shifts_list = []
+    for shift in shifts:
+        shifts_list.append({
+            'id': shift.id,
+            'first_name': shift.user.first_name,
+            'month': shift.month,
+            'day': shift.day,
+            'type': shift.type
+        })
+    return jsonify(shifts_list)
 
 @views.route('/profile', methods=['GET', 'POST'])
 @login_required
