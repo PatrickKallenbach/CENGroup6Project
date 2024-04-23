@@ -177,7 +177,18 @@
         .shift-display li {
             display: inline-block;
             text-align: left;
-            margin-right: 0px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            padding-left: 30px;
+            padding-right: 30px
+        }
+
+        .shift-display li:hover {
+            background-color: rgb(228, 228, 228);
+        }
+
+        .shift-display-selected {
+            background-color: rgb(228, 228, 228);
         }
     </style>
         </head>
@@ -268,7 +279,7 @@
 
             {% if current_user.is_authenticated and current_user.role == 'manager' %}
                 <div id="shift-buttons" class="text-center font-weight-bold">
-                    <button class="shift-buttons">Add Shift</button>
+                    <button id="add-remove-button"class="shift-buttons">Add Shift</button>
                 </div>
             {% endif %}
 
@@ -302,6 +313,8 @@
     let selectedEmployee = null;
     let selectedType = null;
 
+    let selectedShift = null;
+
     let startDay = 0;
     let daysInMonth = 0;
 
@@ -323,6 +336,15 @@
     }
 
     document.getElementById('shift-buttons').addEventListener('click', function() {
+        if (selectedShift == null){
+            addShift();
+        }
+        else {
+            deleteShift();
+        }
+    });
+
+    function addShift() {
         let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
         if (cells.length > 0) {
             cell = cells[0];
@@ -341,14 +363,13 @@
                 let typeDropdown = document.getElementById('typeDropdown');
                 let submitButton = document.getElementById('submitButton');
                 employeeDropdown.innerHTML = '';
-
                 data.forEach(employee => {
                     var option = document.createElement('option');
                     option.value = employee.first_name;
                     option.text = employee.first_name;
                     employeeDropdown.add(option);
                 });
-
+                
                 employeeDropdown.selectedIndex = 0;
                 typeDropdown.selectedIndex = 0;
 
@@ -392,13 +413,28 @@
         else {
             alert("Please select a date first.");
         }
-    });
-
-    /*
-    function deleteShift() {
-        // do something eventually
     }
-    */
+
+
+    function deleteShift() {
+        fetch('/delete_shift', {
+            method: 'DELETE',
+             headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 'id': selectedShift}),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+
+        renderCalendar(currentMonth, currentYear);
+        getShifts();
+    }
 
     function getShifts() {        
         fetch('/get_shifts', {
@@ -424,6 +460,20 @@
                         const listItem = document.createElement('li');
                         
                         listItem.textContent = shift.first_name;
+                        listItem.dataset.shiftID = JSON.stringify(shift.id);
+                        listItem.classList.add('shift-display-content')
+                        listItem.addEventListener('click', function() {
+                            document.getElementById("add-remove-button").innerText = 'Remove Shift';
+
+                            let selectedShifts = document.getElementsByClassName("shift-display-content");
+                            for (let i = 0; i < selectedShifts.length; i++) {
+                                selectedShifts[i].classList.remove('shift-display-selected');
+                            }
+
+                            this.classList.add('shift-display-selected');
+                            selectedShift = JSON.parse(listItem.dataset.shiftID);
+                        });
+
                         switch (shift.type) {
                             case 'Morning':
                                 morning.appendChild(listItem);
@@ -512,12 +562,24 @@
         getShifts();
     }
 
+    let metaKeyPressed = false;
+
     function selectCell() {
+        document.getElementById("add-remove-button").innerText = 'Add Shift';
+
+        let selectedShifts = document.getElementsByClassName("shift-display-content");
+        for (let i = 0; i < selectedShifts.length; i++) {
+            selectedShifts[i].classList.remove('shift-display-selected');
+        }
+
+        selectedShifts = null;
+
         let cells = document.getElementsByTagName('td');
         for (let k = 0; k < cells.length; k++) {
             let cell = cells[k];
             cell.classList.remove('selected');
-        }       
+        }  
+             
         if (selectedMonth == JSON.parse(cells[15].dataset.month)) {
             cells[startDay + selectedDate - 1].classList.add("selected"); 
         }

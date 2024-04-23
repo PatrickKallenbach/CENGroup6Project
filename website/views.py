@@ -70,8 +70,10 @@ def create_shift():
         db.session.commit()
         return jsonify({'message': 'Shift created!'})
 
-@views.route('/delete_shift/<id>', methods=['DELETE'])
-def delete_shift(id):
+@views.route('/delete_shift', methods=['DELETE'])
+def delete_shift():
+    data = request.get_json()
+    id = data['id']
     shift = Shift.query.get(id)
     if shift:
         db.session.delete(shift)
