@@ -123,7 +123,7 @@
             margin: 15% auto; /* 15% from the top and centered */
             padding: 20px;
             border: 1px solid #888;
-            width: 80%; /* Could be more or less, depending on screen size */
+            width: 50%; /* Could be more or less, depending on screen size */
         }
 
         .row {
@@ -155,6 +155,40 @@
             left: 0;
             bottom: 0;
             padding: 10px;
+        }
+
+        .shift-details {
+            width: 50%;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .shift-display-header {
+            text-align: center;
+        }
+
+        .shift-display {    
+            list-style-type: none;
+            padding: 20px;
+            margin: 0;
+            text-align: center;
+        }
+
+        .shift-display li {
+            display: inline-block;
+            text-align: left;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            padding-left: 30px;
+            padding-right: 30px
+        }
+
+        .shift-display li:hover {
+            background-color: rgb(228, 228, 228);
+        }
+
+        .shift-display-selected {
+            background-color: rgb(228, 228, 228);
         }
     </style>
         </head>
@@ -207,7 +241,7 @@
                     <option>Evening</option>
                     <option>Night</option>
                 </select>
-                <button id="submitButton" onclick="closeModal('employeeListModal')">Submit</button>
+                <button id="submitButton">Submit</button>
                 <p id="output"></p>
             </div>
         </div>
@@ -223,11 +257,29 @@
             </ul>
         </div>
     </div>
+
+    <br>
+    <center>
+        <div class="shift-details">
+            <span style="width: 50%">
+                <h2 class="shift-display-header"><u> Morning </u></h2>
+                <ul id="shift-first" class="shift-display"></ul>
+            </span>
+            <span style="width: 50%">
+                <h2 class="shift-display-header"><u> Evening </u></h2>
+                <ul id="shift-second" class="shift-display"></ul>
+            </span>
+            <span style="width: 50%">
+                <h2 class="shift-display-header"><u> Night </u></h2>
+                <ul id="shift-third" class="shift-display"></ul>
+            </span>
+        </div>
+    </center>
     
 
             {% if current_user.is_authenticated and current_user.role == 'manager' %}
                 <div id="shift-buttons" class="text-center font-weight-bold">
-                    <button class="shift-buttons" onclick="addShift()">Add Shift</button>
+                    <button id="add-remove-button"class="shift-buttons">Add Shift</button>
                 </div>
             {% endif %}
 
@@ -235,9 +287,12 @@
             <!-- <div class="reveal-details-button-container">
                 <button id="revealDetailsButton">Reveal Details</button>
             </div> -->
+
+            <!--
             <div class="text-center font-weight-bold">
                 <button id="revealDetailsButton">Reveal Details</button>
             </div>
+        -->
 
 
         
@@ -254,6 +309,11 @@
 
     let selectedMonth = -1;
     let selectedDate = -1;
+
+    let selectedEmployee = null;
+    let selectedType = null;
+
+    let selectedShift = null;
 
     let startDay = 0;
     let daysInMonth = 0;
@@ -275,18 +335,23 @@
         renderCalendar(currentMonth, currentYear);
     }
 
+    document.getElementById('shift-buttons').addEventListener('click', function() {
+        if (selectedShift == null){
+            addShift();
+        }
+        else {
+            deleteShift();
+        }
+    });
+
     function addShift() {
         let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
         if (cells.length > 0) {
             cell = cells[0];
             let month = JSON.parse(cell.dataset.month);
             let day = JSON.parse(cell.dataset.date);
-
-            let selection = showEmployeeList();
-
-            let employee = [];
             
-            fetch('/get_user/' + selection.employee, {
+            fetch('/get-employees', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -294,94 +359,82 @@
             }).then(response => {
                 return response.json();
             }).then(data => {
-                employee.push(data);
-            })
-            
-            fetch('/create_shift', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ user_id: 1, month: month, day: day, type: 1}),
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
+                let employeeDropdown = document.getElementById('employeeDropdown');
+                let typeDropdown = document.getElementById('typeDropdown');
+                let submitButton = document.getElementById('submitButton');
+                employeeDropdown.innerHTML = '';
+                data.forEach(employee => {
+                    var option = document.createElement('option');
+                    option.value = employee.first_name;
+                    option.text = employee.first_name;
+                    employeeDropdown.add(option);
+                });
+                
+                employeeDropdown.selectedIndex = 0;
+                typeDropdown.selectedIndex = 0;
+
+                selectedEmployee = data.find(x => x.first_name === employeeDropdown.value);
+                selectedType = 'Morning';
+
+                employeeDropdown.addEventListener('change', function() {
+                    selectedEmployee = data.find(x => x.first_name === this.value);
+                });
+
+                typeDropdown.addEventListener('change', function() {
+                    selectedType = this.value;
+                });
+
+                submitButton.addEventListener('click', function() {
+                    closeModal('employeeListModal');
+
+                    fetch('/create_shift', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 'user_id': selectedEmployee.id, 'month': month, 'day': day, 'type': selectedType}),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data);
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                    renderCalendar(currentMonth, currentYear);
+                });
+
+
+                document.getElementById('employeeListModal').style.display = 'block';
+            }).catch(error => {
+                console.error('Error fetching employees:', error);
             });
-            renderCalendar(currentMonth, currentYear);
         }
         else {
             alert("Please select a date first.");
         }
-        
-        // let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
-        // if (cells.length > 0) {
-        //     cell = cells[0];
-        //     let month = JSON.parse(cell.dataset.month);
-        //     let date = JSON.parse(cell.dataset.date);
-        //     shifts.push(new Shift(1, "John", "Cook", date, month));
-        //     renderCalendar(currentMonth, currentYear);
-        // }
     }
 
-    function showEmployeeList() {
-        let selectedEmployee = "";
-        let selectedType = 0;
 
-        // Fetch employee data from the server
-        fetch('/get-employees', {
-            method: 'GET',
-            headers: {
+    function deleteShift() {
+        fetch('/delete_shift', {
+            method: 'DELETE',
+             headers: {
                 'Content-Type': 'application/json',
             },
-            // Authentication headers if necessary
-        }).then(response => {
-            return response.json();
-        }).then(data => {
-            // Assuming 'data' is an array of employee objects
-            // const list = document.getElementById('employeeList');
-            // list.innerHTML = ''; // Clear existing list items
-            // data.forEach(employee => {
-            //     const listItem = document.createElement('li');
-            //     listItem.textContent = employee.first_name; // Adjust if needed
-            //     list.appendChild(listItem);
-            // });
-            // Show the modal
-            let employeeDropdown = document.getElementById('employeeDropdown');
-            let typeDropdown = document.getElementById('typeDropdown');
-
-            data.forEach(employee => {
-                var option = document.createElement('option');
-                option.value = employee.first_name;
-                option.text = employee.first_name;
-                employeeDropdown.add(option);
-            });
-
-            employeeDropdown.addEventListener('change', function() {
-                selectedEmployee = this.value;
-            });
-
-            typeDropdown.addEventListener('change', function() {
-                selectedType = this.value;
-            });
-
-            document.getElementById('employeeListModal').style.display = 'block';
-        }).catch(error => {
-            console.error('Error fetching employees:', error);
+            body: JSON.stringify({ 'id': selectedShift}),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
         });
 
-        return {employee: selectedEmployee, type: selectedType};
+        renderCalendar(currentMonth, currentYear);
+        getShifts();
     }
-
-
-    /*
-    function deleteShift() {
-        // do something eventually
-    }
-    */
 
     function getShifts() {        
         fetch('/get_shifts', {
@@ -394,29 +447,48 @@
                 return response.json();
             }).then(data => {
                 // Assuming 'data' is an array of employee objects
-                const list = document.getElementById('shiftList');
-                list.innerHTML = ''; // Clear existing list items
+                const morning = document.getElementById('shift-first');
+                const evening = document.getElementById('shift-second');
+                const night = document.getElementById('shift-third');
+
+                morning.innerHTML = '';
+                evening.innerHTML = '';
+                night.innerHTML = '';
+
                 data.forEach(shift => {
                     if (shift.day == selectedDate && shift.month == selectedMonth) {
                         const listItem = document.createElement('li');
-                        let type = "";
-                        switch (shift.type){
-                            case 1:
-                                type = "Morning";
+                        
+                        listItem.textContent = shift.first_name;
+                        listItem.dataset.shiftID = JSON.stringify(shift.id);
+                        listItem.classList.add('shift-display-content')
+                        listItem.addEventListener('click', function() {
+                            document.getElementById("add-remove-button").innerText = 'Remove Shift';
+
+                            let selectedShifts = document.getElementsByClassName("shift-display-content");
+                            for (let i = 0; i < selectedShifts.length; i++) {
+                                selectedShifts[i].classList.remove('shift-display-selected');
+                            }
+
+                            this.classList.add('shift-display-selected');
+                            selectedShift = JSON.parse(listItem.dataset.shiftID);
+                        });
+
+                        switch (shift.type) {
+                            case 'Morning':
+                                morning.appendChild(listItem);
                                 break;
-                            case 2:
-                                type = "Evening";
+                            case 'Evening':
+                                evening.appendChild(listItem);
                                 break;
-                            case 3:
-                                type = "Night";
+                            case 'Night':
+                                night.appendChild(listItem);
                                 break;
                         }
-                        listItem.textContent = shift.first_name + ": " + type;
-                        list.appendChild(listItem);
                     }
                 });
                 // Show the modal
-                document.getElementById('shiftListModal').style.display = 'block';
+                //document.getElementById('shiftListModal').style.display = 'block';
             }).catch(error => {
                 console.error('Error fetching employees:', error);
             });
@@ -485,16 +557,37 @@
 
         if (selectedDate !== -1 && selectedMonth !== -1) {
             selectCell();
-         }
+        }
+
+        getShifts();
     }
 
+    let metaKeyPressed = false;
+
     function selectCell() {
+        try{
+            document.getElementById("add-remove-button").innerText = 'Add Shift';
+        }
+        catch (e) {};
+
+        let selectedShifts = document.getElementsByClassName("shift-display-content");
+        for (let i = 0; i < selectedShifts.length; i++) {
+            selectedShifts[i].classList.remove('shift-display-selected');
+        }
+
+        selectedShifts = null;
+
         let cells = document.getElementsByTagName('td');
         for (let k = 0; k < cells.length; k++) {
             let cell = cells[k];
             cell.classList.remove('selected');
-        }       
-        cells[startDay + selectedDate - 1].classList.add("selected"); 
+        }  
+             
+        if (selectedMonth == JSON.parse(cells[15].dataset.month)) {
+            cells[startDay + selectedDate - 1].classList.add("selected"); 
+        }
+
+        getShifts();
     }
 
     var modal = document.getElementById("myModal");
@@ -520,39 +613,6 @@
         document.getElementById(modalId).style.display = 'none';
     }
 
-
-
-    function showEmployeeList() {
-        // Fetch employee data from the server
-        fetch('/get-employees', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            // Authentication headers if necessary
-        }).then(response => {
-            return response.json();
-        }).then(data => {
-            // Assuming 'data' is an array of employee objects
-            const list = document.getElementById('employeeList');
-            list.innerHTML = ''; // Clear existing list items
-            data.forEach(employee => {
-                const listItem = document.createElement('li');
-                listItem.textContent = employee.first_name; // Adjust if needed
-                list.appendChild(listItem);
-            });
-            // Show the modal
-            document.getElementById('employeeListModal').style.display = 'block';
-        }).catch(error => {
-            console.error('Error fetching employees:', error);
-        });
-    }
-
-    // Event listener for your Add Shift button
-    document.getElementById('shift-buttons').addEventListener('click', function() {
-        showEmployeeList();
-    });
-
     document.getElementById('revealDetailsButton').addEventListener('click', function() {
         let selectedCell = document.querySelector('.selected');
         if (selectedCell) {
@@ -565,16 +625,3 @@
 
 </script>
 {% endblock %}
-
-
-const tbody = document.getElementById('calendarBody');
-tbody.addEventListener('click', function (e) {
-    const cell = e.target.closest('td');
-    if (!cell) return; // Quit, not clicked on a cell
-    const cells = tbody.getElementsByTagName('td');
-    for (const cell of cells) {
-        cell.classList.remove('selected');
-    }
-    cell.classList.add('selected');
-    // Do not clear innerHTML: cell.innerHTML = "";
-});
