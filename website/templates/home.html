@@ -395,13 +395,13 @@
 
 
     function addShift() {
-        let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
+        let cells = document.getElementById("calendarBody").getElementsByClassName("selected"); // get selected cell
         if (cells.length > 0) {
             cell = cells[0];
             let month = JSON.parse(cell.dataset.month);
             let day = JSON.parse(cell.dataset.date);
 
-                fetch('/get-employees', {
+                fetch('/get-employees', { // get employee information, once info has been recieved, then we create the shift
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -414,7 +414,7 @@
                     let typeDropdown = document.getElementById('typeDropdown');
                     let submitButton = document.getElementById('submitButton');
                     employeeDropdown.innerHTML = '';
-                    data.forEach(employee => {
+                    data.forEach(employee => { // add options to employee dropdown
                         var option = document.createElement('option');
                         option.value = employee.first_name;
                         option.text = employee.first_name;
@@ -424,8 +424,8 @@
                     employeeDropdown.selectedIndex = 0;
                     typeDropdown.selectedIndex = 0;
 
-                    selectedEmployee = data.find(x => x.first_name === employeeDropdown.value);
-                    selectedType = 'Morning';
+                    selectedEmployee = data.find(x => x.first_name === employeeDropdown.value); // select first employee and save info
+                    selectedType = 'Morning'; // select time slot
 
                     // add option change functionality
                     employeeDropdown.addEventListener('change', function() {
@@ -436,7 +436,7 @@
                         selectedType = this.value;
                     });
 
-                    submitButton.addEventListener('click', function() {
+                    submitButton.addEventListener('click', function() { // on clicking submit button
                         closeModal('employeeListModal');
 
                         fetch('/create_shift', { // add shift object to system
@@ -444,7 +444,7 @@
                             headers: {
                                 'Content-Type': 'application/json',
                             },
-                            body: JSON.stringify({ 'user_id': selectedEmployee.id, 'month': month, 'day': day, 'type': selectedType}),
+                            body: JSON.stringify({ 'user_id': selectedEmployee.id, 'month': month, 'day': day, 'type': selectedType}), // send info to database
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -457,7 +457,7 @@
                     });
 
 
-                    document.getElementById('employeeListModal').style.display = 'block';
+                    document.getElementById('employeeListModal').style.display = 'block'; // display popup
                 }).catch(error => {
                     console.error('Error fetching employees:', error);
                 });
@@ -474,7 +474,7 @@
              headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ 'id': selectedShift}),
+            body: JSON.stringify({ 'id': selectedShift}), // send delete request to database
         })
         .then(response => response.json())
         .then(data => {
@@ -484,9 +484,11 @@
             console.error('Error:', error);
         });
 
+        // render and update
         renderCalendar(currentMonth, currentYear);
         getShifts();
 
+        // deselect shift
         selectedShift = null;
     }
 
@@ -527,7 +529,7 @@
                     // });
 
                     if (shift.day == selectedDate && shift.month == selectedMonth) {
-                        // create shift lsit item
+                        // create shift list item
                         const listItem = document.createElement('li');
                         
                         listItem.textContent = shift.first_name;
@@ -538,12 +540,12 @@
                             document.getElementById("add-remove-button").innerText = 'Remove Shift';
 
                             let selectedShifts = document.getElementsByClassName("shift-display-content");
-                            for (let i = 0; i < selectedShifts.length; i++) {
+                            for (let i = 0; i < selectedShifts.length; i++) { // deselect other shifts
                                 selectedShifts[i].classList.remove('shift-display-selected');
                             }
 
                             this.classList.add('shift-display-selected');
-                            selectedShift = JSON.parse(listItem.dataset.shiftID);
+                            selectedShift = JSON.parse(listItem.dataset.shiftID); // select current shift
                         });
 
                         // add to corresponding column
@@ -576,11 +578,11 @@
         let calendarBody = document.getElementById("calendarBody");
         calendarBody.innerHTML = ""; // Clear the previous cells
 
-        let numRows = Math.ceil((startDay + daysInMonth)/7);
+        let numRows = Math.ceil((startDay + daysInMonth)/7); // number of rows change based on month
 
         let date = 1;
         for (let i = 0; i < numRows; i++) {
-            let row = document.createElement("tr");
+            let row = document.createElement("tr"); // add row
 
             for (let j = 0; j < 7; j++) {
                 // add each cell
@@ -589,14 +591,14 @@
                     cell.innerHTML = "";
                 } else if (date > daysInMonth) {
                     cell.innerHTML = "";
-                } else {
+                } else { // if date is actually associated with current month (not before 1st or after last date)
                     cell.dataset.date = JSON.stringify(date);
                     cell.dataset.month = JSON.stringify(month);
 
-                    cell.innerHTML = `<span class="date-number">${date}</span>`;
+                    cell.innerHTML = `<span class="date-number">${date}</span>`; // add date number
                 
                     if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                        cell.classList.add("highlight");
+                        cell.classList.add("highlight"); // highlight today
                     }
 
                     cell.addEventListener('click', function() { // add cell select functionality
@@ -610,7 +612,7 @@
                     date++;
                 }
                 
-                row.appendChild(cell);
+                row.appendChild(cell); // add cell to row
             }
             calendarBody.appendChild(row); // Append each row to the calendar body
         }
@@ -619,14 +621,14 @@
             selectCell();
         }
         
-        getShifts();
+        getShifts(); // update shifts
     }
 
-    let metaKeyPressed = false;
+    let metaKeyPressed = false; // legacy functionality
 
     function selectCell() { // select cell
         try{
-            document.getElementById("add-remove-button").innerText = 'Add Shift';
+            document.getElementById("add-remove-button").innerText = 'Add Shift'; // add shift button may not always be there
         }
         catch (e) {};
 
