@@ -183,10 +183,7 @@
             padding-right: 30px
         }
 
-        .shift-display li:hover {
-            background-color: rgb(228, 228, 228);
-        }
-
+        .shift-display li:hover,
         .shift-display-selected {
             background-color: rgb(228, 228, 228);
         }
@@ -463,7 +460,7 @@
                         listItem.dataset.shiftID = JSON.stringify(shift.id);
                         listItem.classList.add('shift-display-content')
                         listItem.addEventListener('click', function() {
-                            document.getElementById("add-remove-button").innerText = 'Remove Shift';
+                            try {document.getElementById("add-remove-button").innerText = 'Remove Shift';} catch(e) {};
 
                             let selectedShifts = document.getElementsByClassName("shift-display-content");
                             for (let i = 0; i < selectedShifts.length; i++) {
