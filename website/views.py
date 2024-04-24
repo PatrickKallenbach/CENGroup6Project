@@ -28,7 +28,16 @@ def home():
             db.session.commit()
             flash('Note added!', category='success')
 
-    return render_template("home.html", user=current_user)
+    # Query shifts for the current user
+    shifts = Shift.query.filter_by(user_id=current_user.id).all()
+    shifts_data = [{
+        'month': shift.month,
+        'day': shift.day,
+        'type': shift.type
+    } for shift in shifts]
+
+    return render_template("home.html", user=current_user, shifts=shifts_data)
+
 
 @views.route('/delete-note', methods=['POST'])
 @login_required
@@ -49,7 +58,7 @@ def get_employees():
     if current_user.role != 'manager':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    employees = User.query.filter_by(role='employee').all()  # Adjust query as needed
+    employees = User.query.filter_by(role='employee').all()  
     employee_data = [{'id': e.id, 'first_name': e.first_name} for e in employees]
     return jsonify(employee_data)
 
@@ -83,18 +92,29 @@ def delete_shift():
         return jsonify({'message': 'Shift not found!'})
     
 @views.route('/get_shifts', methods=['GET'])
+@login_required
 def get_shifts():
+    # if current_user.role == 'employee':
+    #     # Fetch only shifts for the logged-in employee
+    #     shifts = Shift.query.filter_by(user_id=current_user.id).all()
+    # else:
+    #     # Alternatively, for managers or other roles, you might want to return different data
+    #     # or handle it accordingly
+    #     return jsonify({'error': 'Unauthorized'}), 403
+
+    
     shifts = Shift.query.all()
-    shifts_list = []
-    for shift in shifts:
-        shifts_list.append({
-            'id': shift.id,
-            'first_name': shift.user.first_name,
-            'month': shift.month,
-            'day': shift.day,
-            'type': shift.type
-        })
+
+    shifts_list = [{
+        'id': shift.id,
+        'first_name': shift.user.first_name,
+        'month': shift.month,
+        'day': shift.day,
+        'type': shift.type
+    } for shift in shifts]
+
     return jsonify(shifts_list)
+
 
 @views.route('/profile', methods=['GET', 'POST'])
 @login_required
