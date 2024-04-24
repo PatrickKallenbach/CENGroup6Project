@@ -22,7 +22,8 @@
             text-align: left;
             padding: 8px;
             vertical-align: top;
-            width: 10%
+            width: 10%;
+            position: relative
         }
 
         td:hover {background-color: lightcyan;}
@@ -183,14 +184,72 @@
             padding-right: 30px
         }
 
-        .shift-display li:hover,
+        .shift-display li:hover {
+            background-color: rgb(228, 228, 228);
+        }
+
         .shift-display-selected {
             background-color: rgb(228, 228, 228);
         }
+
+
+        .welcome-container {
+            background-color: #ffffff;
+            text-align: center; 
+            padding: 10px 0; 
+            margin: 10px 0;
+            border-radius: 8px; 
+            box-shadow: 0 4px 6px rgba(255, 255, 255, 0.1); 
+        }
+
+        h1 {
+            font-size: 1.5em; 
+            color: #333;
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+
+        .user-name {
+            color: #2628a1; 
+        }
+
+        .shift-indicator {
+            display: inline-table;
+            margin-left: 5px;
+            width: 8px;
+            height: 8px;
+            background-color: rgb(20, 216, 20);
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+
     </style>
         </head>
         <body>
             <div class="container">
+
+                <div class="welcome-container">
+                    <h1>Welcome back, <span class="user-name">{{ user.first_name }}!</span></h1>
+                </div>
+                
+                {% if user.role == 'employee' %} <!-- Check if the current user's role is 'employee' -->
+                    <div class="shifts-container">
+                        <h2>Your Shifts</h2>
+                        {% if shifts %}
+                            <ul>
+                            {% for shift in shifts %}
+                                <li>Date: {{ shift.month + 1 }}/{{ shift.day }}, Type: {{ shift.type }}</li>
+                            {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>You have no shifts scheduled.</p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
                 
                 <div id="monthYear" class="text-center font-weight-bold month-year-buttons">
                     <button onclick="changeMonth(-1)" id="prev">&#10094;</button>
@@ -280,16 +339,6 @@
                 </div>
             {% endif %}
 
-            
-            <!-- <div class="reveal-details-button-container">
-                <button id="revealDetailsButton">Reveal Details</button>
-            </div> -->
-
-            <!--
-            <div class="text-center font-weight-bold">
-                <button id="revealDetailsButton">Reveal Details</button>
-            </div>
-        -->
 
 
         
@@ -315,14 +364,17 @@
     let startDay = 0;
     let daysInMonth = 0;
 
+
+    var currentShifts = [];
+    let loggedInEmployeeName = "{{ user.first_name }}";
+
+
     const months = ["January", "February", "March", "April", "May", "June",
                     "July", "August", "September", "October", "November", "December"];
 
     document.addEventListener("DOMContentLoaded", function() {
         renderCalendar(currentMonth, currentYear);
     });
-
-    let shifts = [];
 
     function changeMonth(direction) {
         currentMonth += direction;
@@ -341,71 +393,72 @@
         }
     });
 
+
     function addShift() {
         let cells = document.getElementById("calendarBody").getElementsByClassName("selected");
         if (cells.length > 0) {
             cell = cells[0];
             let month = JSON.parse(cell.dataset.month);
             let day = JSON.parse(cell.dataset.date);
-            
-            fetch('/get-employees', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            }).then(response => {
-                return response.json();
-            }).then(data => {
-                let employeeDropdown = document.getElementById('employeeDropdown');
-                let typeDropdown = document.getElementById('typeDropdown');
-                let submitButton = document.getElementById('submitButton');
-                employeeDropdown.innerHTML = '';
-                data.forEach(employee => {
-                    var option = document.createElement('option');
-                    option.value = employee.first_name;
-                    option.text = employee.first_name;
-                    employeeDropdown.add(option);
-                });
-                
-                employeeDropdown.selectedIndex = 0;
-                typeDropdown.selectedIndex = 0;
 
-                selectedEmployee = data.find(x => x.first_name === employeeDropdown.value);
-                selectedType = 'Morning';
-
-                employeeDropdown.addEventListener('change', function() {
-                    selectedEmployee = data.find(x => x.first_name === this.value);
-                });
-
-                typeDropdown.addEventListener('change', function() {
-                    selectedType = this.value;
-                });
-
-                submitButton.addEventListener('click', function() {
-                    closeModal('employeeListModal');
-
-                    fetch('/create_shift', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ 'user_id': selectedEmployee.id, 'month': month, 'day': day, 'type': selectedType}),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(data);
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
+                fetch('/get-employees', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }).then(response => {
+                    return response.json();
+                }).then(data => {
+                    let employeeDropdown = document.getElementById('employeeDropdown');
+                    let typeDropdown = document.getElementById('typeDropdown');
+                    let submitButton = document.getElementById('submitButton');
+                    employeeDropdown.innerHTML = '';
+                    data.forEach(employee => {
+                        var option = document.createElement('option');
+                        option.value = employee.first_name;
+                        option.text = employee.first_name;
+                        employeeDropdown.add(option);
                     });
-                    renderCalendar(currentMonth, currentYear);
+                    
+                    employeeDropdown.selectedIndex = 0;
+                    typeDropdown.selectedIndex = 0;
+
+                    selectedEmployee = data.find(x => x.first_name === employeeDropdown.value);
+                    selectedType = 'Morning';
+
+                    employeeDropdown.addEventListener('change', function() {
+                        selectedEmployee = data.find(x => x.first_name === this.value);
+                    });
+
+                    typeDropdown.addEventListener('change', function() {
+                        selectedType = this.value;
+                    });
+
+                    submitButton.addEventListener('click', function() {
+                        closeModal('employeeListModal');
+
+                        fetch('/create_shift', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ 'user_id': selectedEmployee.id, 'month': month, 'day': day, 'type': selectedType}),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data);
+                        })
+                        .catch((error) => {
+                            console.error('Error:', error);
+                        });
+                        renderCalendar(currentMonth, currentYear);
+                    });
+
+
+                    document.getElementById('employeeListModal').style.display = 'block';
+                }).catch(error => {
+                    console.error('Error fetching employees:', error);
                 });
-
-
-                document.getElementById('employeeListModal').style.display = 'block';
-            }).catch(error => {
-                console.error('Error fetching employees:', error);
-            });
         }
         else {
             alert("Please select a date first.");
@@ -431,6 +484,8 @@
 
         renderCalendar(currentMonth, currentYear);
         getShifts();
+
+        selectedShift = null;
     }
 
     function getShifts() {        
@@ -444,6 +499,7 @@
                 return response.json();
             }).then(data => {
                 // Assuming 'data' is an array of employee objects
+                // currentShifts.length = 0;
                 const morning = document.getElementById('shift-first');
                 const evening = document.getElementById('shift-second');
                 const night = document.getElementById('shift-third');
@@ -451,8 +507,21 @@
                 morning.innerHTML = '';
                 evening.innerHTML = '';
                 night.innerHTML = '';
-
+                
+                // var cells = document.getElementsByTagName('td');
                 data.forEach(shift => {
+                    // cells.forEach(cell => {
+                    //     // if (shift.first_name == loggedInEmployeeName) {
+                    //     //     test++;
+                    //     // }
+                    //     // alert(test);
+                    //         // if (currentShifts[i].first_name == loggedInEmployeeName && currentShifts[i].day == date && currentShifts[i].month == month + 1) {
+                    //         //     const shiftIndicator = document.createElement('div');
+                    //         //     shiftIndicator.className = 'shift-indicator';
+                    //         //     cell.appendChild(shiftIndicator); // Append the green dot to the cell
+                    //         // }
+                    // });
+
                     if (shift.day == selectedDate && shift.month == selectedMonth) {
                         const listItem = document.createElement('li');
                         
@@ -460,7 +529,7 @@
                         listItem.dataset.shiftID = JSON.stringify(shift.id);
                         listItem.classList.add('shift-display-content')
                         listItem.addEventListener('click', function() {
-                            try {document.getElementById("add-remove-button").innerText = 'Remove Shift';} catch(e) {};
+                            document.getElementById("add-remove-button").innerText = 'Remove Shift';
 
                             let selectedShifts = document.getElementsByClassName("shift-display-content");
                             for (let i = 0; i < selectedShifts.length; i++) {
@@ -484,14 +553,13 @@
                         }
                     }
                 });
-                // Show the modal
-                //document.getElementById('shiftListModal').style.display = 'block';
             }).catch(error => {
                 console.error('Error fetching employees:', error);
             });
     }
 
     function renderCalendar(month, year) {
+
         const monthYearHeader = document.getElementById("monthYear");
         monthYearHeader.children[1].innerHTML = `${months[month]} ${year}`;
 
@@ -509,44 +577,31 @@
 
             for (let j = 0; j < 7; j++) {
                 let cell = document.createElement("td");
-                // ... handle cell content and styling
-                
-                // // Add click event for opening the modal here
-                // cell.addEventListener('click', function() {
-                //     // Show the modal
-                //     modal.style.display = "block";
-                    
-                //     // Set the content based on the cell's data
-                //     document.querySelector(".modal-content p").textContent = "You clicked on date " + cell.dataset.date;
-                    
-                //     // Remove 'selected' class from other cells and add to the clicked cell
-                //     let cells = document.getElementsByTagName('td');
-                //     for (let k = 0; k < cells.length; k++) {
-                //         cells[k].classList.remove('selected');
-                //     }
-                //     cell.classList.add("selected");
-                // });
-                // row.appendChild(cell);
-
-                if (i === 0 && j < startDay || date > daysInMonth) {
+                if (i === 0 && j < startDay) {
                     cell.innerHTML = "";
-                } 
-                else if (date <= daysInMonth) {
-                    if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-                        cell.classList.add("highlight");
-                    }
+                } else if (date > daysInMonth) {
+                    cell.innerHTML = "";
+                } else {
                     cell.dataset.date = JSON.stringify(date);
                     cell.dataset.month = JSON.stringify(month);
 
                     cell.innerHTML = `<span class="date-number">${date}</span>`;
+                
+                    if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                        cell.classList.add("highlight");
+                    }
+
+                    cell.addEventListener('click', function() {
+                        selectedDate = JSON.parse(cell.dataset.date);
+                        selectedMonth = JSON.parse(cell.dataset.month);
+
+                        selectCell();
+                    });
+                }
+                if (i > 0 || j >= startDay) {
                     date++;
                 }
-                cell.addEventListener('click', function() {
-                    selectedDate = JSON.parse(cell.dataset.date);
-                    selectedMonth = JSON.parse(cell.dataset.month);
-
-                    selectCell();
-                });
+                
                 row.appendChild(cell);
             }
             calendarBody.appendChild(row); // Append each row to the calendar body
@@ -555,7 +610,7 @@
         if (selectedDate !== -1 && selectedMonth !== -1) {
             selectCell();
         }
-
+        
         getShifts();
     }
 
@@ -602,8 +657,8 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        renderCalendar(currentMonth, currentYear);
+     document.addEventListener("DOMContentLoaded", function() {
+         renderCalendar(currentMonth, currentYear);
     });
 
     function closeModal(modalId) {
@@ -619,6 +674,25 @@
             alert("Please select a date first.");
         }
     });
+
+    // document.addEventListener("DOMContentLoaded", function() {
+    //     // Fetch the shifts data first
+    //     fetch('/get_shifts', {
+    //         method: 'GET',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //         },
+    //     }).then(response => {
+    //         return response.json();
+    //     }).then(shiftsData => {
+    //         // Once the data is retrieved, call renderCalendar and pass the shifts data
+    //         renderCalendar(currentMonth, currentYear, shiftsData); // Pass the shifts data here
+    //     }).catch(error => {
+    //         console.error('Error:', error);
+    //     });
+    // });
+
+
 
 </script>
 {% endblock %}
