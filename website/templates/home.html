@@ -385,10 +385,10 @@
     }
 
     document.getElementById('shift-buttons').addEventListener('click', function() {
-        if (selectedShift == null){
+        if (selectedShift == null){ // if a shift is not selected
             addShift();
         }
-        else {
+        else { // if a shift is selected
             deleteShift();
         }
     });
@@ -409,6 +409,7 @@
                 }).then(response => {
                     return response.json();
                 }).then(data => {
+                    // add dropdown menus
                     let employeeDropdown = document.getElementById('employeeDropdown');
                     let typeDropdown = document.getElementById('typeDropdown');
                     let submitButton = document.getElementById('submitButton');
@@ -426,6 +427,7 @@
                     selectedEmployee = data.find(x => x.first_name === employeeDropdown.value);
                     selectedType = 'Morning';
 
+                    // add option change functionality
                     employeeDropdown.addEventListener('change', function() {
                         selectedEmployee = data.find(x => x.first_name === this.value);
                     });
@@ -437,7 +439,7 @@
                     submitButton.addEventListener('click', function() {
                         closeModal('employeeListModal');
 
-                        fetch('/create_shift', {
+                        fetch('/create_shift', { // add shift object to system
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -466,7 +468,7 @@
     }
 
 
-    function deleteShift() {
+    function deleteShift() { // simple function to delete shift and reload calendar
         fetch('/delete_shift', {
             method: 'DELETE',
              headers: {
@@ -494,10 +496,11 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                // Authentication headers if necessary
             }).then(response => {
                 return response.json();
             }).then(data => {
+                // get columns below table
+            
                 // Assuming 'data' is an array of employee objects
                 // currentShifts.length = 0;
                 const morning = document.getElementById('shift-first');
@@ -507,7 +510,8 @@
                 morning.innerHTML = '';
                 evening.innerHTML = '';
                 night.innerHTML = '';
-                
+
+                // attempted shift indication feature
                 // var cells = document.getElementsByTagName('td');
                 data.forEach(shift => {
                     // cells.forEach(cell => {
@@ -523,12 +527,14 @@
                     // });
 
                     if (shift.day == selectedDate && shift.month == selectedMonth) {
+                        // create shift lsit item
                         const listItem = document.createElement('li');
                         
                         listItem.textContent = shift.first_name;
                         listItem.dataset.shiftID = JSON.stringify(shift.id);
                         listItem.classList.add('shift-display-content')
                         listItem.addEventListener('click', function() {
+                            // add shift select functionality
                             document.getElementById("add-remove-button").innerText = 'Remove Shift';
 
                             let selectedShifts = document.getElementsByClassName("shift-display-content");
@@ -540,6 +546,7 @@
                             selectedShift = JSON.parse(listItem.dataset.shiftID);
                         });
 
+                        // add to corresponding column
                         switch (shift.type) {
                             case 'Morning':
                                 morning.appendChild(listItem);
@@ -576,6 +583,7 @@
             let row = document.createElement("tr");
 
             for (let j = 0; j < 7; j++) {
+                // add each cell
                 let cell = document.createElement("td");
                 if (i === 0 && j < startDay) {
                     cell.innerHTML = "";
@@ -591,7 +599,7 @@
                         cell.classList.add("highlight");
                     }
 
-                    cell.addEventListener('click', function() {
+                    cell.addEventListener('click', function() { // add cell select functionality
                         selectedDate = JSON.parse(cell.dataset.date);
                         selectedMonth = JSON.parse(cell.dataset.month);
 
@@ -616,12 +624,13 @@
 
     let metaKeyPressed = false;
 
-    function selectCell() {
+    function selectCell() { // select cell
         try{
             document.getElementById("add-remove-button").innerText = 'Add Shift';
         }
         catch (e) {};
 
+        // deselect all shifts
         let selectedShifts = document.getElementsByClassName("shift-display-content");
         for (let i = 0; i < selectedShifts.length; i++) {
             selectedShifts[i].classList.remove('shift-display-selected');
@@ -629,17 +638,19 @@
 
         selectedShifts = null;
 
+        // deselect all cells
         let cells = document.getElementsByTagName('td');
         for (let k = 0; k < cells.length; k++) {
             let cell = cells[k];
             cell.classList.remove('selected');
         }  
-             
+
+        // select cell
         if (selectedMonth == JSON.parse(cells[15].dataset.month)) {
             cells[startDay + selectedDate - 1].classList.add("selected"); 
         }
 
-        getShifts();
+        getShifts(); // update shifts below calendar
     }
 
     var modal = document.getElementById("myModal");
@@ -665,7 +676,7 @@
         document.getElementById(modalId).style.display = 'none';
     }
 
-    document.getElementById('revealDetailsButton').addEventListener('click', function() {
+    document.getElementById('revealDetailsButton').addEventListener('click', function() { // legacy code
         let selectedCell = document.querySelector('.selected');
         if (selectedCell) {
             getShifts();
