@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db   ##means from __init__.py import db
+from . import db
 from flask_login import login_user, login_required, logout_user, current_user
 import re
 
@@ -42,11 +42,9 @@ def sign_up():
         role = request.form.get('role')
         code = request.form.get('code')
 
-        # Define your codes for manager and employee roles
         manager_code = "MANAGER123"
         employee_code = "EMPLOYEE456"
 
-        # Check if the entered code matches the role
         if (role == "manager" and code != manager_code) or (role == "employee" and code != employee_code):
             flash('Invalid enrollment code for selected role.', category='error')
             return render_template("sign_up.html", user=current_user)
